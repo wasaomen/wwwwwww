@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>動画ファイル送信サイト</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .upload-section {
+      background: #f8f9fa;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+    
+    .upload-section h2 {
+      margin-bottom: 20px;
+      color: #555;
+    }
+    
+    .upload-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    input[type="file"] {
+      padding: 10px;
+      border: 2px dashed #667eea;
+      border-radius: 5px;
+      background: white;
+    }
+    
+    button {
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: #5568d3;
+    }
+    
+    .video-list {
+      margin-top: 30px;
+    }
+    
+    .video-list h2 {
+      margin-bottom: 20px;
+      color: #555;
+    }
+    
+    .video-item {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .video-info {
+      flex: 1;
+    }
+    
+    .video-name {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    
+    .video-size {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .video-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .message {
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 15px;
+      display: none;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 動画ファイル送信サイト</h1>
+    
+    <div class="upload-section">
+      <h2>動画アップロード</h2>
+      <form class="upload-form" id="uploadForm">
+        <input type="file" id="videoFile" accept="video/*" required>
+        <button type="submit">アップロード</button>
+      </form>
+      <div id="message" class="message"></div>
+      <p style="margin-top: 15px; color: #666; font-size: 14px;">
+        アップロードされた動画はDiscordチャンネルに自動送信されます。
+        ダウンロードはDiscordから行ってください。
+      </p>
+    </div>
+  </div>
+  
+  <script>
+    const uploadForm = document.getElementById('uploadForm');
+    const videoFile = document.getElementById('videoFile');
+    const message = document.getElementById('message');
+    const submitButton = uploadForm.querySelector('button[type="submit"]');
+    let isUploading = false;
+    
+    // アップロード
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // アップロード中は送信を防ぐ
+      if (isUploading) {
+        e.preventDefault();
+        return;
+      }
+      
+      isUploading = true;
+      submitButton.disabled = true;
+      submitButton.textContent = 'アップロード中...';
+      
+      const formData = new FormData();
+      formData.append('video', videoFile.files[0]);
+      
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          showMessage('アップロード成功！Discordに送信されました', 'success');
+          videoFile.value = '';
+        } else {
+          showMessage(result.error || 'アップロードに失敗しました', 'error');
+        }
+      } catch (error) {
+        showMessage('アップロードに失敗しました', 'error');
+      } finally {
+        isUploading = false;
+        submitButton.disabled = false;
+        submitButton.textContent = 'アップロード';
+      }
+    });
+    
+    // メッセージ表示
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `message ${type}`;
+      setTimeout(() => {
+        message.className = 'message';
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
